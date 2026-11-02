@@ -1,0 +1,35 @@
+\documentclass{article}
+\usepackage{graphicx} % Required for inserting images
+
+\title{CPEN 416 Midterm Checking Report}
+\author{Group 6 }
+\date{October 2026}
+
+\begin{document}
+
+\maketitle
+
+\section{High Level Overview}
+One of the basic techniques of modern quantum computing is LCU, or linear combinations of unitary operations. This technique allows us to simulate more complex operations using single and multiple qubit gates and ancillary qubits. However, some of the costs of this approach are that LCU can require many measurements, many expensive multiple-qubit operations, and increasing depth of circuits.
+[TODO: show a four or five qubit damped GHZ state using the standard LCU approach, with CNOTs and whatnot, circuit example in ref 54]
+
+This paper provides an alternate framework that allows for more efficient simulation, with constant depth (TODO: elaborate) and much fewer gates. The general approach appears to be to break down a circuit into a linear combination of simpler transformations, and sampling them repeatedly to create a sum that is equivalent to the original circuit to a specified level of precision.
+
+For this project we propose applying the SCU process to a couple of classical Hamiltonians, so we can check the results via manual calculation. Eg: penduluum, double penduluum
+
+TBD: do we want to try the 8-qubit damped GHZ simulation they describe? might be a bit difficult to do and verify
+
+\section{Software Requirements}
+Pennylane for quantum simulation
+Standard python to simulate classical Hamiltonian
+
+\section{Distribution of Work}
+idk we'll figure this out
+
+\section{Risk Assessment}
+Standard computation of the classical Hamiltonians should not present major difficulty. However, coming up with a quantum analog may be tricky, and we might run into some issues trying to compute the decomposition into Pauli rotations.
+
+References:
+https://en.wikipedia.org/wiki/Convex_combination
+
+\end{document}
