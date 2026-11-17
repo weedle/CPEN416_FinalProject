@@ -37,7 +37,7 @@ def kraus(damping, wires):
     #qml.QubitChannel([K0, K1], wires=wires)
 
 #@qml.set_shots(1_000)
-@qml.set_shots(500)
+@qml.set_shots(50)
 @qml.qnode(dev)
 def damped_with_rotation_GHZ(rot, damping):
     qml.MottonenStatePreparation(starting_state, wires=range(9))
@@ -46,11 +46,19 @@ def damped_with_rotation_GHZ(rot, damping):
     # TODO: the kraus fn applies the Kraus operators needed for the damping channel
     # but I'm missing something to actually apply it as an operation
     # temprarily just using built-in damping channel
-    qml.AmplitudeDamping(0.2, wires=8)
+    #qml.AmplitudeDamping(0.2, wires=8)
+    qml.AmplitudeDamping(damping, wires=0)
+    qml.AmplitudeDamping(damping, wires=1)
+    qml.AmplitudeDamping(damping, wires=2)
+    qml.AmplitudeDamping(damping, wires=3)
+    qml.AmplitudeDamping(damping, wires=4)
+    qml.AmplitudeDamping(damping, wires=5)
+    qml.AmplitudeDamping(damping, wires=6)
+    qml.AmplitudeDamping(damping, wires=7)
 
-    qml.CNOT(wires=[0, 8])
+    #qml.CNOT(wires=[0, 8])
     #qml.PauliX(wires=8)
-    qml.RX(rot, wires=8)
+    #qml.RX(rot, wires=8)
  
     for i in range(1, 8):
         qml.CNOT(wires=[8, i])
@@ -58,14 +66,14 @@ def damped_with_rotation_GHZ(rot, damping):
     return qml.counts(all_outcomes=False)
 
 qnode = qml.QNode(damped_with_rotation_GHZ, dev)
-points = 500
+points = 10
 start = time()
 for damp, col in [[0.2, 'r-'], [0.4, 'g-'], [0.6, 'b-']]:
     rot = 0
     xvals = []
     yvals = []
     for rot_amount in range(points):
-        if rot_amount % 50 == 0:
+        if rot_amount % 5 == 0:
             print("For damping amount " + str(damp) + ": " + '%.2g'%(100 * rot_amount/points) + "%")
         rot = (rot_amount/points) * np.pi
         x = qnode(rot, damp)
