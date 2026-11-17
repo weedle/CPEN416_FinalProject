@@ -66,14 +66,19 @@ def damped_with_rotation_GHZ(rot, damping):
     return qml.counts(all_outcomes=False)
 
 qnode = qml.QNode(damped_with_rotation_GHZ, dev)
+
+# Note: change shots and 10 to maybe 500, and 100 to get a better graph
+# but even with just 50 and 10 it takes 7 minutes
+# change update_interval if the printouts are too noisy
 points = 10
+update_interval = 2
 start = time()
 for damp, col in [[0.2, 'r-'], [0.4, 'g-'], [0.6, 'b-']]:
     rot = 0
     xvals = []
     yvals = []
     for rot_amount in range(points):
-        if rot_amount % 5 == 0:
+        if rot_amount % update_interval == 0:
             print("For damping amount " + str(damp) + ": " + '%.2g'%(100 * rot_amount/points) + "%")
         rot = (rot_amount/points) * np.pi
         x = qnode(rot, damp)
