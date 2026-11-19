@@ -1,4 +1,4 @@
-from time import time, gmtime, strftime
+from time import time, localtime, strftime
 import pennylane as qml
 import numpy as np
 import matplotlib.pyplot as plt
@@ -38,7 +38,7 @@ def kraus(damping, wires):
     #qml.QubitChannel([K0, K1], wires=wires)
 
 #@qml.set_shots(1_000)
-@qml.set_shots(1_000)
+@qml.set_shots(10)
 @qml.qnode(dev)
 def damped_with_rotation_GHZ(rot, damping):
     qml.MottonenStatePreparation(starting_state, wires=range(8))
@@ -77,10 +77,10 @@ qnode = qml.QNode(damped_with_rotation_GHZ, dev)
 # 200 and 200 takes 5h+
 # on my (Kevin's) machine, update here with your times
 # change update_interval if the printouts are too noisy
-points = 50
+points = 1000
 update_interval = 10
 start = time()
-print("The current time is " + strftime("%m/%d %H:%M:%S", gmtime()))
+print("The current time is " + strftime("%m/%d %H:%M:%S", localtime()))
 damping_list = [[0, 'r-'], [0.05, 'g-'], [0.15, 'b-']]
 total = len(damping_list) * points
 progress = 0
@@ -108,5 +108,6 @@ for damp, col in damping_list:
     plt.ylabel("Zero population")
     plt.title("Damped GHZ simulation")
 print("Done! Time elapsed is " + elapsedTime((time() - start)))
-print("The current time is " + strftime("%m/%d %H:%M:%S", gmtime()))
+print("The current time is " + strftime("%m/%d %H:%M:%S", localtime()))
 plt.show()
+plt.savefig("damped_GHZ_" + strftime("%m-%d_%H:%M:%S") + ".png")
