@@ -38,7 +38,7 @@ def kraus(damping, wires):
     #qml.QubitChannel([K0, K1], wires=wires)
 
 #@qml.set_shots(1_000)
-@qml.set_shots(200)
+@qml.set_shots(10)
 @qml.qnode(dev)
 def damped_with_rotation_GHZ(rot, damping):
     qml.MottonenStatePreparation(starting_state, wires=range(9))
@@ -49,13 +49,10 @@ def damped_with_rotation_GHZ(rot, damping):
 
     for i in range(0, 7):
         qml.CNOT(wires=[i, i+1])
-    qml.RZ(rot, wires=7)
-    for i in range(7, 0, -1):
-        qml.CNOT(wires=[i-1, i])
 
     # TODO: the kraus fn applies the Kraus operators needed for the damping channel
     # but I'm missing something to actually apply it as an operation
-    # temprarily just using built-in damping channel
+    # temporarily just using built-in damping channel
     qml.AmplitudeDamping(damping, wires=0)
     qml.AmplitudeDamping(damping, wires=1)
     qml.AmplitudeDamping(damping, wires=2)
@@ -64,6 +61,11 @@ def damped_with_rotation_GHZ(rot, damping):
     qml.AmplitudeDamping(damping, wires=5)
     qml.AmplitudeDamping(damping, wires=6)
     qml.AmplitudeDamping(damping, wires=7)
+
+    qml.RX(rot, wires=7)
+    for i in range(7, 0, -1):
+        qml.CNOT(wires=[i, i-1])
+
     return qml.counts(all_outcomes=False)
 
 qnode = qml.QNode(damped_with_rotation_GHZ, dev)
@@ -71,13 +73,14 @@ qnode = qml.QNode(damped_with_rotation_GHZ, dev)
 # Note: change shots and 10 to maybe 500, and 100 to get a better graph
 # but even with just 50 shots and 10 points it takes 7 minutes
 # 10 shots and 20 points takes 14min
+# 200 and 200 takes 5h+
 # on my (Kevin's) machine, update here with your times
 # change update_interval if the printouts are too noisy
 points = 200
 update_interval = 5
 start = time()
 print("The current time is " + strftime("%m/%d %H:%M:%S", gmtime()))
-damping_list = [[0.01, 'r-'], [0.02, 'r-'], [0.05, 'g-'], [0.1, 'g-'], [0.15, 'b-'], [0.2, 'b-']]
+damping_list = [[0, 'r-'], [0.01, 'r-'], [0.05, 'g-'], [0.1, 'g-'], [0.15, 'b-'], [0.2, 'b-']]
 total = len(damping_list) * points
 progress = 0
 for damp, col in damping_list:
@@ -86,7 +89,7 @@ for damp, col in damping_list:
     yvals = []
     for rot_amount in range(points):
         progress += 1
-        rot = (rot_amount/points) * np.pi
+        rot = (rot_amount/points) * 2 * np.pi # scale rotation
         x = qnode(rot, damp)
         zeropop = 0
         for key in x.keys():
