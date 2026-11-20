@@ -6,7 +6,17 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import sys
 
+SHOTS = 1000
+ANGLES = 5
+
+# I'm curious as to how much the amount of damping impacts the time of each run
+# the ETA assumes each run takes the same amount of time, so seeing how far it's off by
+# is a neat way of seeing how much increased damping affects the runtime
+# but it prints out a lot, so only enable if you're interested in the stats
+print_eta_accuracy = False
+
 dev = qml.device('default.mixed', wires=8)
+qml.decomposition.enable_graph()
 #dev = qml.device('default.qubit', wires=9)
 
 # all in 0 state
@@ -30,22 +40,25 @@ def kraus(damping, wires):
     # note: getH is how you get the Hermitian transpose (complex conjugate) in numpy
     # nvm, don't use np.matrix and getH(), np.array and transpose() work
     #qml.QubitChannel(mat, wires=wires)
-    qml.QubitChannel([K0, K1], wires=wires)
+    ch = qml.QubitChannel([K0, K1], wires=wires)
+    return ch
+    #print(ch.compute_decomposition(qml.PauliX, qml.PauliY, qml.PauliZ, qml.Hadamard, wires=wires))
 
-@qml.set_shots(1_000)
+@qml.transforms.decompose(gate_set=["CNOT", "RX", "RY", "RZ", "GlobalPhase"])
+@qml.set_shots(SHOTS)
 @qml.qnode(dev)
 def damped_with_rotation_GHZ(rot, damping):
     qml.MottonenStatePreparation(starting_state, wires=range(8))
+    for i in range(8):
+        kraus(damping, i)
+        #qml.AmplitudeDamping(damping, wires=0)
+
     qml.Hadamard(0)
 
     for i in range(0, 7):
         qml.CNOT(wires=[i, i+1])
 
     qml.RX(rot, wires=7)
-
-    for i in range(8):
-        kraus(damping, i)    
-    #qml.AmplitudeDamping(damping, wires=0)
 
     for i in range(7, 0, -1):
         qml.CNOT(wires=[i, i-1])
@@ -54,14 +67,21 @@ def damped_with_rotation_GHZ(rot, damping):
 
 qnode = qml.QNode(damped_with_rotation_GHZ, dev)
 
+# COMMENT OUT THESE TWO LINES IF YOU WANT TO GENERATE THE GRAPH
+print(qml.draw(damped_with_rotation_GHZ)(0.2*np.pi, 0))
+exit(0)
+
 # change update_interval if the printouts are too noisy
-points = 1000
-update_interval = 10
+points = ANGLES
+update_interval = 2
+
 start = time()
 print("The current time is " + strftime("%m/%d %H:%M:%S", localtime()))
 damping_list = [[0, 'r-'], [0.05, 'g-'], [0.15, 'b-']]
 total = len(damping_list) * points
 progress = 0
+results = {}
+log_index = 0
 for damp, col in damping_list:
     rot = 0
     xvals = []
@@ -80,12 +100,22 @@ for damp, col in damping_list:
         xvals.append(rot)
         if rot_amount % update_interval == 0 and progress > 1:
             elapsed = time() - start
-            print("For damping amount " + str(damp) + ": " + '%.2g'%(100 * progress/total) + "% estimated time remaining: " +     elapsedTime(elapsed*total/progress - elapsed))
+            eta = elapsed*total/progress - elapsed
+            string_print = "For damping amount " + str(damp) + ": " + '%.2g'%(100 * progress/total) + "% estimated time remaining: " +     elapsedTime(eta)
+            print(string_print)
+            results[log_index] = [string_print, elapsed, eta]
+            log_index += 1
     plt.plot(xvals, yvals, col)
     plt.xlabel("Rotation")
     plt.ylabel("Zero population")
-    plt.title("Damped GHZ simulation")
-print("Done! Time elapsed is " + elapsedTime((time() - start)))
+    plt.title(f'Damped GHZ simulation ({SHOTS} shots, {ANGLES} angles)')
+total_time = time() - start
+print("Done! Time elapsed is " + elapsedTime(total_time))
 print("The current time is " + strftime("%m/%d %H:%M:%S", localtime()))
+
+if print_eta_accuracy:
+    for i in range(0, log_index-1):
+        print("expected eta ", results[i][2], " actual was ", total_time - results[i][1],  " accuracy was ", '%.2g'%(results[i][2]/(total_time - results[i][1])))
+
 plt.show()
-plt.savefig("damped_GHZ_" + strftime("%m-%d_%H:%M:%S") + ".png")
+plt.savefig("damped_GHZ_" + strftime("%m-%d_%H:%M:%S") + f"_{SHOTS}S_{ANGLES}A" + ".png")
